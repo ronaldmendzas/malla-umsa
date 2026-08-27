@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Malla Curricular Interactiva — Lic. Informática (UMSA)</title>
+<style>
+:root{
+  --bg:#f1f5f9; --card:#ffffff; --border:#e2e8f0; --ink:#0f172a; --mut:#64748b;
+  --green:#16a34a; --green-d:#166534; --amber:#d97706; --violet:#7c3aed; --slate:#475569;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px}
+.app{max-width:1700px;margin:0 auto;padding:18px 20px 40px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:21px;margin:0 0 4px}
+.sub{margin:0;color:var(--mut);font-size:13px}
+#resetBtn{border:1.5px solid #dc2626;background:#fff;color:#b91c1c;font-weight:600;font-size:13px;padding:9px 16px;border-radius:10px;cursor:pointer}
+#resetBtn:hover{background:#fef2f2}
+.summary{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch;margin-bottom:10px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px;min-width:132px;display:flex;flex-direction:column;gap:2px}
+.stat .n{font-size:22px;font-weight:800;line-height:1.1}
+.stat .l{font-size:12px;color:var(--mut);font-weight:600}
+.stat.s-done .n{color:var(--green-d)}
+.stat.s-open .n{color:#15803d}
+.stat.s-locked .n{color:#64748b}
+.progress{flex:1;min-width:280px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.ptop{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);font-weight:600}
+.ptop #pPct{color:var(--green-d);font-size:14px;font-weight:800}
+.bar{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#15803d);border-radius:999px;transition:width .25s}
+.hint{font-size:12.5px;color:var(--mut);margin:0 0 12px}
+.note{font-size:12px;color:var(--mut);margin:4px 0 0}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+.scroller{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+#graphContent{position:relative;width:max-content;min-width:100%}
+#edges{position:absolute;top:0;left:0;pointer-events:none;z-index:5}
+.edge{fill:none;stroke-width:2.25;opacity:.95;stroke-linecap:round}
+.edge.pre{stroke:#475569}
+.edge.ven{stroke:#d97706;stroke-dasharray:7 5}
+.edge.auto{stroke:#7c3aed;stroke-dasharray:3 5}
+.columns{display:flex;gap:14px}
+.column{width:212px;flex:none;display:flex;flex-direction:column}
+.col-head{background:#1e293b;color:#fff;border-radius:9px;padding:8px 10px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;transition:opacity .15s}
+.col-head .prog{background:#334155;border-radius:999px;padding:1px 8px;font-size:11px}
+.node{position:relative;z-index:1;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:7px 9px;margin-top:9px;cursor:pointer;user-select:none;transition:opacity .15s,transform .1s,box-shadow .1s;min-height:56px}
+.node .top{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:2px}
+.node .sig{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10.5px;font-weight:700;color:#64748b;letter-spacing:.2px}
+.node .ic{font-size:11px;line-height:1}
+.node .nm{font-size:12.5px;font-weight:600;line-height:1.28;color:var(--ink)}
+.node:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,23,42,.12)}
+.node.done{background:var(--green-d);border-color:#14532d}
+.node.done .nm{color:#f0fdf4}
+.node.done .sig{color:#bbf7d0}
+.node.open{box-shadow:inset 0 0 0 2px var(--green)}
+.node.open .nm{color:#14532d}
+.node.open .sig{color:#15803d}
+.node.locked{background:#f8fafc}
+.node.locked .nm{color:#94a3b8}
+.node.locked .sig{color:#cbd5e1}
+.node.readonly{cursor:default}
+.node.readonly:hover{transform:none;box-shadow:none}
+.node.dim{opacity:.22}
+.node.focused{box-shadow:0 0 0 3px #6366f1,0 4px 14px rgba(99,102,241,.35)}
+.autob{position:absolute;top:-7px;right:8px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-size:9px;font-weight:800;padding:0 6px;border-radius:999px;letter-spacing:.5px}
+.focus-mode .col-head{opacity:.45}
+.block{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-top:14px;width:100%}
+.block h2{font-size:14px;margin:0 0 10px}
+.block h2 small{display:block;font-weight:400;color:var(--mut);font-size:12px;margin-top:2px}
+.tec-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.tec-g h3{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin:0 0 8px}
+.tec-g .node{margin-top:0}
+.ele-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:9px}
+.ele-grid .node{margin-top:0;min-height:52px}
+#panel{position:sticky;top:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;max-height:calc(100vh - 28px);overflow-y:auto}
+#panel h3{font-size:15px;margin:2px 0 8px;line-height:1.3}
+.p-sig{font-family:ui-monospace,Consolas,monospace;font-size:12px;font-weight:800;color:#4f46e5}
+.p-meta{margin-bottom:10px}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px}
+.st-done{background:#dcfce7;color:#14532d}
+.st-open{background:#f0fdf4;color:#166534;border:1.5px solid #86efac}
+.st-locked{background:#f1f5f9;color:#64748b}
+.autotag{font-size:10px;font-weight:800;color:#5b21b6;background:#ede9fe;border-radius:999px;padding:2px 7px}
+.p-row{font-size:13px;margin:6px 0}
+.p-row .k{font-weight:700}
+#panel .k{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin:12px 0 6px}
+.reqs{display:flex;flex-direction:column;gap:8px}
+.req-t{font-size:12.5px;font-weight:700;margin-bottom:3px}
+.req-t.ok{color:#15803d}
+.req-t.no{color:#b45309}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:999px;padding:3px 9px;border:1px solid var(--border);background:#f8fafc;line-height:1.25}
+.chip.ok{background:#dcfce7;border-color:#86efac;color:#14532d}
+.chip.no{background:#fef2f2;border-color:#fecaca;color:#7f1d1d}
+.chip.dep{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+.chip i{font-style:normal;font-weight:400;opacity:.75}
+.ph{font-size:13px;color:var(--mut);line-height:1.5}
+footer{margin-top:18px;font-size:11.5px;color:var(--mut);line-height:1.6}
+@media (max-width:1150px){
+  .layout{grid-template-columns:1fr}
+  #panel{position:static;max-height:none;order:-1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Malla Curricular Interactiva</h1>
+      <p class="sub">Licenciatura en Informática · Mención Desarrollo de Software e Innovación Tecnológica · UMSA</p>
+    </div>
+    <button id="resetBtn" type="button">Reiniciar progreso</button>
+  </header>
+
+  <div class="summary">
+    <div class="stat s-done"><span class="n" id="cDone">0</span><span class="l">✅ Aprobadas</span></div>
+    <div class="stat s-open"><span class="n" id="cOpen">0</span><span class="l">🟢 Habilitadas</span></div>
+    <div class="stat s-locked"><span class="n" id="cLock">0</span><span class="l">🔒 Bloqueadas</span></div>
+    <div class="progress">
+      <div class="ptop"><span id="pPct">0%</span><span id="pTxt">0 de 48 materias de la malla</span></div>
+      <div class="bar"><div class="fill" id="pFill"></div></div>
+    </div>
+  </div>
+
+  <p class="hint">
+    Haz click en una materia para marcarla como aprobada. Pasa el cursor (o toca) una materia para ver sus conexiones.
+    Desplaza horizontalmente para ver los 9 semestres. Flechas: sólida gris = pre-requisito directo · punteada naranja = semestre vencido · punteada violeta = completa una electiva de la malla.
+  </p>
+
+  <div class="layout">
+    <div class="left">
+      <div class="scroller" id="scroller">
+        <div id="graphContent">
+          <svg id="edges">
+            <defs>
+              <marker id="m-pre" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker>
+              <marker id="m-ven" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d97706"/></marker>
+              <marker id="m-auto" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#7c3aed"/></marker>
+            </defs>
+            <g id="edgeLayer"></g>
+          </svg>
+          <div class="columns" id="columns"></div>
+          <section class="block">
+            <h2>Salidas intermedias · Técnicos Superiores<small>Electivas I y II de la malla (5º y 6º semestre) · sin pre-requisitos · cada materia completa automáticamente su electiva de malla</small></h2>
+            <div class="tec-groups" id="tecGroups"></div>
+          </section>
+          <section class="block">
+            <h2>Electivas de Mención<small>Electivas III–VI de la malla (7º y 8º semestre) · sin pre-requisitos · acumulativas: 1 completa la III, 2 la IV, 3 la V y 4 la VI</small></h2>
+            <div class="ele-grid" id="eleGrid"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <aside id="panel"></aside>
+  </div>
+
+  <footer>
+    <b>Notas:</b> «N.º semestre vencido» = todas las materias troncales de ese semestre aprobadas.
+    Las Electivas I–VI de la malla se completan automáticamente al aprobar materias de los bloques Técnicos Superiores y Electivas de Mención (por eso el contador de aprobadas las incluye).
+    El % de avance se calcula sobre las 48 materias de la malla (42 troncales + 6 electivas). El progreso se guarda solo en memoria de esta sesión.
+    <br>Fuente: plan de estudios vigente — Resoluciones HCU 533/2022, HCU 055/2025, HCF 498/2026 y HCF 1066/2026.
+  </footer>
+</div>
+
+<script>
+'use strict';
+const SEM_NAMES=['Primer','Segundo','Tercer','Cuarto','Quinto','Sexto','Séptimo','Octavo','Noveno'];
+const VEN_LABEL={3:'3er semestre vencido',4:'4to semestre vencido',5:'5to semestre vencido',6:'6to semestre vencido',7:'7mo semestre vencido',8:'8vo semestre vencido'};
+
+const MALLA=[
+[1,'INF-111','Programación I',[]],
+[1,'INF-112','Fundamentos Digitales',[]],
+[1,'INF-113','Programación Web I',[]],
+[1,'INF-114','Álgebra',[]],
+[1,'INF-115','Cálculo I',[]],
+[1,'INF-116','Física',[]],
+[2,'INF-121','Programación II',['INF-111']],
+[2,'INF-122','Programación Web II',['INF-113']],
+[2,'INF-123','Electrónica General I',['INF-112','INF-116']],
+[2,'INF-124','Estadística I',['INF-114']],
+[2,'INF-125','Álgebra Lineal',['INF-114']],
+[2,'INF-126','Cálculo II',['INF-115']],
+[3,'INF-131','Programación III',['INF-121']],
+[3,'INF-132','Base de Datos I',['INF-121']],
+[3,'INF-133','Programación Web III',['INF-111','INF-122']],
+[3,'INF-134','Estadística II',['INF-124']],
+[3,'INF-135','Sistemas Operativos',['INF-121']],
+[3,'TRA-136','Metodología de la Investigación',['INF-124','INF-125']],
+[4,'INF-241','Análisis y Diseño de Sistemas I',['INF-132']],
+[4,'INF-242','Redes I',['INF-135']],
+[4,'INF-243','Investigación Operativa I',['INF-134']],
+[4,'INF-244','Introducción a la Robótica',['INF-123','INF-124']],
+[4,'INF-245','Programación de Dispositivos Móviles I',['INF-131','INF-133']],
+[4,'INF-246','Fundamentos de Diseño y Animación',['INF-125','INF-133']],
+[5,'INF-251','Ingeniería de Software I',['INF-241']],
+[5,'INF-252','Base de Datos II',['INF-132']],
+[5,'INF-253','Análisis y Diseño de Sistemas II',['INF-241']],
+[5,'INF-254','Programación de Dispositivos Móviles II',['INF-245']],
+[5,'TRA-256','Legislación Informática y Ética',['V3']],
+[6,'INF-261','Ingeniería de Software II',['INF-251']],
+[6,'INF-262','Base de Datos III',['INF-252']],
+[6,'INF-263','Desarrollo de Aplicaciones Multimedia',['INF-246']],
+[6,'INF-264','Emprendimiento e Innovación Tecnológica',['TRA-256']],
+[6,'INF-266','Taller de Proyecto',['V5']],
+[7,'INF-371','Seguridad de la Información',['INF-242']],
+[7,'INF-372','Inteligencia Artificial',['INF-262']],
+[7,'INF-373','Métodos Numéricos I',['INF-126']],
+[7,'TRA-374','Práctica Profesional',['V6']],
+[8,'INF-381','Simulación de Sistemas',['INF-243']],
+[8,'INF-382','Ingeniería de Software III',['INF-261']],
+[8,'INF-384','Taller de Graduación I',['V7']],
+[9,'INF-391','Taller de Graduación II',['V8']]
+].map(function(r){return {sem:r[0],sigla:r[1],name:r[2],pre:r[3],type:'malla'};});
+
+const SLOTS=[
+{sigla:'E1',name:'Electiva I',sem:5,pre:['V4'],slot:1,type:'slot'},
+{sigla:'E2',name:'Electiva II',sem:6,pre:['V4'],slot:2,type:'slot'},
+{sigla:'E3',name:'Electiva III',sem:7,pre:['V5'],slot:3,type:'slot'},
+{sigla:'E4',name:'Electiva IV',sem:7,pre:['V5'],slot:4,type:'slot'},
+{sigla:'E5',name:'Electiva V',sem:8,pre:['V6'],slot:5,type:'slot'},
+{sigla:'E6',name:'Electiva VI',sem:8,pre:['V6'],slot:6,type:'slot'}
+];
+
+const TEC=[
+{sigla:'TVD-251',name:'Programación Gráfica',group:'Desarrollo de Videojuegos',pre:[],slot:1,type:'tec'},
+{sigla:'TVD-261',name:'Animación Digital 2D y 3D',group:'Desarrollo de Videojuegos',pre:[],slot:2,type:'tec'},
+{sigla:'TAW-251',name:'Desarrollo Web BackEnd',group:'Desarrollo de Aplicaciones Web',pre:[],slot:1,type:'tec'},
+{sigla:'TAW-261',name:'Ingeniería Web',group:'Desarrollo de Aplicaciones Web',pre:[],slot:2,type:'tec'},
+{sigla:'TIE-251',name:'Administración de Entornos Virtuales de Aprendizaje y Cursos Abiertos Masivos en Línea',group:'Informática Educativa',pre:[],slot:1,type:'tec'},
+{sigla:'TIE-261',name:'Desarrollo de Software Educativo',group:'Informática Educativa',pre:[],slot:2,type:'tec'},
+{sigla:'TAM-251',name:'Sistemas Embebidos',group:'Desarrollo de Aplicaciones Móviles',pre:[],slot:1,type:'tec'},
+{sigla:'TAM-261',name:'Desarrollo de Aplicaciones Móviles Multiplataforma',group:'Desarrollo de Aplicaciones Móviles',pre:[],slot:2,type:'tec'}
+];
+
+const ELE=[
+['INF-311','Minería de Datos (Data Mining)'],
+['INF-312','Bioinformática'],
+['INF-313','Realidad Aumentada y Virtual'],
+['INF-314','Inglés Técnico'],
+['INF-315','Preparación y Evaluación de Proyectos'],
+['INF-316','Informática Forense'],
+['INF-317','Internet de las Cosas'],
+['INF-318','Computación en la Nube'],
+['INF-319','Programación a Bajo Nivel'],
+['INF-320','Auditoría de Sistemas'],
+['INF-321','Cálculo III'],
+['INF-322','Macrodatos y Analítica de Datos (Big Data)'],
+['INF-323','Aprendizaje Automático (Machine Learning)'],
+['INF-324','Aprendizaje Profundo (Deep Learning)'],
+['INF-325','Derecho Informático'],
+['INF-326','Negociaciones y Toma de Decisiones'],
+['INF-327','Inteligencia de Negocios (Business Intelligence)'],
+['INF-328','Visión por Computadora'],
+['INF-329','Procesamiento Digital de Imágenes'],
+['INF-330','Informática Médica'],
+['INF-331','Investigación Operativa II'],
+['INF-332','Hacking Ético I (Ética y Vulnerabilidad de Sistemas)'],
+['INF-333','Redes II'],
+['INF-334','Dirección de Proyectos Informáticos']
+].map(function(r){return {sigla:r[0],name:r[1],pre:[],type:'ele'};});
+
+const ALL=[].concat(MALLA,SLOTS,TEC,ELE);
+const BY={};
+for(const n of ALL){BY[n.sigla]=n;}
+const CORE={};
+for(const n of MALLA){(CORE[n.sem]=CORE[n.sem]||[]).push(n.sigla);}
+const MALLA_TOTAL=MALLA.length+SLOTS.length;
+
+const approved=new Set();
+let hover=null,selected=null;
+const NODE_EL={};
+const content=document.getElementById('graphContent');
+const PANEL=document.getElementById('panel');
+const EDGE_LAYER=document.getElementById('edgeLayer');
+const EDGES_SVG=document.getElementById('edges');
+
+function vencidoMet(n){return CORE[n].every(function(s){return approved.has(s);});}
+function preMet(node){return node.pre.every(function(p){return p[0]==='V'?vencidoMet(+p.slice(1)):approved.has(p);});}
+function slotFilled(k){
+  if(k===1)return TEC.some(function(t){return t.slot===1&&approved.has(t.sigla);});
+  if(k===2)return TEC.some(function(t){return t.slot===2&&approved.has(t.sigla);});
+  const c=ELE.filter(function(e){return approved.has(e.sigla);}).length;
+  return c>=(k-2);
+}
+function computeStates(){
+  const st={};
+  for(const n of ALL){
+    if(n.type==='slot')st[n.sigla]=slotFilled(n.slot)?'done':(preMet(n)?'open':'locked');
+    else st[n.sigla]=approved.has(n.sigla)?'done':(preMet(n)?'open':'locked');
+  }
+  return st;
+}
+function semLabel(n){
+  if(n.type==='malla'||n.type==='slot')return SEM_NAMES[n.sem-1]+' semestre';
+  if(n.type==='tec')return 'Electiva '+(n.slot===1?'I (5º sem)':'II (6º sem)')+' · '+n.group;
+  return 'Electiva de mención (7º–8º sem)';
+}
+function dependentsOf(node){
+  const out=[];
+  for(const y of MALLA){
+    if(y.pre.indexOf(node.sigla)>=0)out.push({node:y,via:null});
+    for(const p of y.pre){
+      if(p[0]==='V'&&CORE[+p.slice(1)].indexOf(node.sigla)>=0)out.push({node:y,via:+p.slice(1)});
+    }
+  }
+  return out;
+}
+function nodeEl(n){
+  const d=document.createElement('div');
+  d.className='node'+(n.type==='slot'?' readonly':'');
+  d.dataset.sigla=n.sigla;
+  d.tabIndex=n.type==='slot'?-1:0;
+  const sigTxt=n.type==='slot'?'ELECTIVA':n.sigla;
+  d.innerHTML='<div class="top"><span class="sig">'+sigTxt+'</span><span class="ic"></span></div><div class="nm">'+n.name+'</div>'+(n.type==='slot'?'<span class="autob">auto</span>':'');
+  NODE_EL[n.sigla]=d;
+  return d;
+}
+(function build(){
+  const cols=document.getElementById('columns');
+  for(let s=1;s<=9;s++){
+    const col=document.createElement('div');
+    col.className='column';
+    const head=document.createElement('div');
+    head.className='col-head';head.dataset.col=s;
+    head.innerHTML='<span>'+SEM_NAMES[s-1]+' sem.</span><span class="prog">0/0</span>';
+    col.appendChild(head);
+    MALLA.filter(function(n){return n.sem===s;}).forEach(function(n){col.appendChild(nodeEl(n));});
+    SLOTS.filter(function(n){return n.sem===s;}).forEach(function(n){col.appendChild(nodeEl(n));});
+    cols.appendChild(col);
+  }
+  const tg=document.getElementById('tecGroups');
+  const groups=[];
+  for(const t of TEC){
+    let g=groups.find(function(x){return x.name===t.group;});
+    if(!g){g={name:t.group,nodes:[]};groups.push(g);}
+    g.nodes.push(t);
+  }
+  for(const g of groups){
+    const d=document.createElement('div');
+    d.className='tec-g';
+    d.innerHTML='<h3>'+g.name+'</h3>';
+    const wrap=document.createElement('div');
+    g.nodes.forEach(function(n){wrap.appendChild(nodeEl(n));});
+    d.appendChild(wrap);
+    tg.appendChild(d);
+  }
+  const eg=document.getElementById('eleGrid');
+  ELE.forEach(function(n){eg.appendChild(nodeEl(n));});
+})();
+
+function chipShort(sig,ok){
+  const n=BY[sig];
+  return '<span class="chip '+(ok?'ok':'no')+'" title="'+n.name+'">'+sig+' '+(ok?'✓':'✗')+'</span>';
+}
+function chipFull(sig,ok){
+  const n=BY[sig];
+  return '<span class="chip '+(ok?'ok':'no')+'">'+n.sigla+' · '+n.name+' '+(ok?'✓':'✗')+'</span>';
+}
+function renderPanel(n,st){
+  if(!n){
+    PANEL.innerHTML='<h3>Ficha de materia</h3><p class="ph">Pasa el cursor o haz click sobre una materia del grafo para ver aquí su sigla, nombre completo, semestre, pre-requisitos y qué materias desbloquea.</p>';
+    return;
+  }
+  const s=st[n.sigla];
+  const stTxt=s==='done'?'Aprobada':s==='open'?'Habilitada':'Bloqueada';
+  const ic=s==='done'?'✅':s==='open'?'🟢':'🔒';
+  let h='<div class="p-sig">'+(n.type==='slot'?'Electiva de malla':n.sigla)+'</div><h3>'+n.name+'</h3>';
+  h+='<div class="p-meta"><span class="st st-'+s+'">'+ic+' '+stTxt+'</span>'+(n.type==='slot'?' <span class="autotag">automática</span>':'')+'</div>';
+  h+='<div class="p-row"><span class="k">Semestre:</span> '+semLabel(n)+'</div>';
+  if(n.pre.length===0){
+    h+='<div class="p-row"><span class="k">Pre-requisitos:</span> ninguno — disponible desde el inicio.</div>';
+  }else{
+    h+='<div class="k">Requiere:</div><div class="reqs">';
+    for(const p of n.pre){
+      if(p[0]==='V'){
+        const k=+p.slice(1);const c=CORE[k];
+        const okc=c.filter(function(x){return approved.has(x);}).length;
+        h+='<div class="req-g"><div class="req-t '+(okc===c.length?'ok':'no')+'">'+VEN_LABEL[k]+' — '+okc+'/'+c.length+'</div><div class="chips">'+c.map(function(x){return chipShort(x,approved.has(x));}).join('')+'</div></div>';
+      }else h+=chipFull(p,approved.has(p));
+    }
+    h+='</div>';
+  }
+  if(n.type==='slot'&&n.slot<=2){
+    const cands=TEC.filter(function(t){return t.slot===n.slot;});
+    h+='<div class="k">Se completa automáticamente al aprobar cualquiera de:</div><div class="chips">'+cands.map(function(t){return chipFull(t.sigla,approved.has(t.sigla));}).join('')+'</div>';
+  }
+  if(n.type==='slot'&&n.slot>2){
+    const c=ELE.filter(function(e){return approved.has(e.sigla);}).length;
+    h+='<div class="k">Se completa automáticamente con electivas de mención:</div><p class="note">Se necesitan '+(n.slot-2)+' electiva(s) del bloque inferior (acumulativas: 1 completa la III, 2 la IV, 3 la V y 4 la VI). Electivas de mención aprobadas: '+c+'.</p>';
+  }
+  if(n.type==='tec'){
+    h+='<p class="note">Al aprobarla se completa automáticamente la <b>Electiva '+(n.slot===1?'I':'II')+'</b> de la malla (Técnico Superior en '+n.group+').</p>';
+  }
+  if(n.type==='ele'){
+    h+='<p class="note">Cuenta para completar automáticamente las Electivas III–VI de la malla (acumulativas).</p>';
+  }
+  const deps=dependentsOf(n);
+  if(n.type==='tec')deps.push({node:SLOTS[n.slot-1],via:'auto'});
+  if(deps.length){
+    h+='<div class="k">Desbloquea:</div><div class="chips">'+deps.map(function(d){
+      const via=d.via==='auto'?'completa ': '→ ';
+      const extra=d.via&&d.via!=='auto'?' <i>(vía '+VEN_LABEL[d.via]+')</i>':'';
+      return '<span class="chip dep" title="'+d.node.name+'">'+via+d.node.name+extra+'</span>';
+    }).join('')+'</div>';
+  }else if(n.type==='malla'){
+    h+='<div class="k">Desbloquea:</div><p class="note">No desbloquea otras materias de la malla directamente.</p>';
+  }
+  PANEL.innerHTML=h;
+}
+function nodeRect(el){
+  const r=el.getBoundingClientRect();
+  const b=content.getBoundingClientRect();
+  return {x:r.left-b.left,y:r.top-b.top,w:r.width,h:r.height};
+}
+function edgePath(a,b){
+  const ra=nodeRect(a),rb=nodeRect(b);
+  const ac={x:ra.x+ra.w/2,y:ra.y+ra.h/2},bc={x:rb.x+rb.w/2,y:rb.y+rb.h/2};
+  const dx=bc.x-ac.x,dy=bc.y-ac.y;
+  let x1,y1,x2,y2,horiz;
+  if(Math.abs(dx)>Math.abs(dy)*1.2){
+    horiz=true;
+    if(dx>0){x1=ra.x+ra.w;y1=ac.y;x2=rb.x;y2=bc.y;}
+    else{x1=ra.x;y1=ac.y;x2=rb.x+rb.w;y2=bc.y;}
+  }else{
+    horiz=false;
+    if(dy>0){x1=ac.x;y1=ra.y+ra.h;x2=bc.x;y2=rb.y;}
+    else{x1=ac.x;y1=ra.y;x2=bc.x;y2=rb.y+rb.h;}
+  }
+  const off=Math.min(70,Math.max(35,horiz?Math.abs(x2-x1)*0.45:Math.abs(y2-y1)*0.45));
+  let c1,c2;
+  if(horiz){const sx=Math.sign(x2-x1)||1;c1=(x1+sx*off)+' '+y1;c2=(x2-sx*off)+' '+y2;}
+  else{const sy=Math.sign(y2-y1)||1;c1=x1+' '+(y1+sy*off);c2=x2+' '+(y2-sy*off);}
+  return 'M '+x1+' '+y1+' C '+c1+', '+c2+', '+x2+' '+y2;
+}
+function edgesFor(node){
+  const out=[];
+  if(node.type==='malla'||node.type==='slot'){
+    for(const p of node.pre){
+      if(p[0]==='V'){
+        const n=+p.slice(1);
+        for(const s of CORE[n])out.push({from:s,to:node.sigla,type:'ven'});
+      }else out.push({from:p,to:node.sigla,type:'pre'});
+    }
+  }
+  if(node.type==='malla'){
+    for(const y of MALLA){
+      if(y.pre.indexOf(node.sigla)>=0)out.push({from:node.sigla,to:y.sigla,type:'pre'});
+      for(const p of y.pre){
+        if(p[0]==='V'&&CORE[+p.slice(1)].indexOf(node.sigla)>=0)out.push({from:node.sigla,to:y.sigla,type:'ven'});
+      }
+    }
+  }
+  if(node.type==='tec')out.push({from:node.sigla,to:'E'+node.slot,type:'auto'});
+  if(node.type==='slot'&&node.slot<=2){
+    for(const t of TEC)if(t.slot===node.slot)out.push({from:t.sigla,to:node.sigla,type:'auto'});
+  }
+  return out;
+}
+function activeNode(){return hover||selected;}
+function redrawEdges(){
+  EDGES_SVG.setAttribute('width',Math.ceil(content.scrollWidth));
+  EDGES_SVG.setAttribute('height',Math.ceil(content.scrollHeight));
+  EDGE_LAYER.innerHTML='';
+  const act=activeNode();
+  for(const n of ALL)NODE_EL[n.sigla].classList.remove('dim','focused');
+  content.classList.toggle('focus-mode',!!act);
+  if(!act)return;
+  const eds=edgesFor(act);
+  const rel={};rel[act.sigla]=true;
+  for(const e of eds){rel[e.from]=true;rel[e.to]=true;}
+  for(const n of ALL)if(!rel[n.sigla])NODE_EL[n.sigla].classList.add('dim');
+  NODE_EL[act.sigla].classList.remove('dim');
+  NODE_EL[act.sigla].classList.add('focused');
+  for(const e of eds){
+    const a=NODE_EL[e.from],b=NODE_EL[e.to];
+    if(!a||!b)continue;
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',edgePath(a,b));
+    p.setAttribute('class','edge '+e.type);
+    p.setAttribute('marker-end','url(#m-'+e.type+')');
+    EDGE_LAYER.appendChild(p);
+  }
+}
+function update(){
+  const st=computeStates();
+  for(const n of ALL){
+    const el=NODE_EL[n.sigla];
+    el.classList.remove('done','open','locked');
+    el.classList.add(st[n.sigla]);
+    el.querySelector('.ic').textContent=st[n.sigla]==='done'?'✅':st[n.sigla]==='open'?'🟢':'🔒';
+  }
+  let cD=0,cO=0,cL=0;
+  for(const n of ALL){
+    if(st[n.sigla]==='done')cD++;
+    else if(st[n.sigla]==='open')cO++;
+    else cL++;
+  }
+  document.getElementById('cDone').textContent=cD;
+  document.getElementById('cOpen').textContent=cO;
+  document.getElementById('cLock').textContent=cL;
+  const mallaDone=MALLA.filter(function(n){return approved.has(n.sigla);}).length+SLOTS.filter(function(s){return slotFilled(s.slot);}).length;
+  const pct=Math.round(mallaDone/MALLA_TOTAL*100);
+  document.getElementById('pPct').textContent=pct+'%';
+  document.getElementById('pTxt').textContent=mallaDone+' de '+MALLA_TOTAL+' materias de la malla';
+  document.getElementById('pFill').style.width=pct+'%';
+  document.querySelectorAll('.col-head').forEach(function(h){
+    const s=+h.dataset.col;
+    const nodes=MALLA.filter(function(n){return n.sem===s;}).concat(SLOTS.filter(function(n){return n.sem===s;}));
+    const d=nodes.filter(function(n){return st[n.sigla]==='done';}).length;
+    h.querySelector('.prog').textContent=d+'/'+nodes.length;
+  });
+  renderPanel(activeNode(),st);
+  redrawEdges();
+}
+function toggle(n){
+  if(n.type==='slot')return;
+  if(approved.has(n.sigla))approved.delete(n.sigla);
+  else approved.add(n.sigla);
+}
+content.addEventListener('click',function(e){
+  const el=e.target.closest('.node');
+  if(el){
+    const n=BY[el.dataset.sigla];
+    selected=n;
+    toggle(n);
+    update();
+  }else{
+    selected=null;
+    update();
+  }
+});
+content.addEventListener('mouseover',function(e){
+  const el=e.target.closest('.node');
+  const n=el?BY[el.dataset.sigla]:null;
+  if(n!==hover){hover=n;update();}
+});
+content.addEventListener('mouseleave',function(){
+  if(hover){hover=null;update();}
+});
+content.addEventListener('focusin',function(e){
+  const el=e.target.closest('.node');
+  if(el){hover=BY[el.dataset.sigla];update();}
+});
+content.addEventListener('focusout',function(){
+  if(hover){hover=null;update();}
+});
+content.addEventListener('keydown',function(e){
+  if(e.key==='Enter'||e.key===' '){
+    const el=e.target.closest('.node');
+    if(el){
+      e.preventDefault();
+      const n=BY[el.dataset.sigla];
+      selected=n;
+      toggle(n);
+      update();
+    }
+  }
+});
+document.getElementById('resetBtn').addEventListener('click',function(){
+  approved.clear();
+  hover=null;selected=null;
+  update();
+});
+let rafPending=false;
+function scheduleRedraw(){
+  if(rafPending)return;
+  rafPending=true;
+  requestAnimationFrame(function(){rafPending=false;redrawEdges();});
+}
+window.addEventListener('resize',scheduleRedraw);
+if(window.ResizeObserver)new ResizeObserver(scheduleRedraw).observe(content);
+update();
+
+</script>
+</body>
+</html>
